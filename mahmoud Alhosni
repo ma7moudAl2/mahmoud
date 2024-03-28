@@ -1,0 +1,78 @@
+import numpy as np
+import cv2
+import random
+import matplotlib.pyplot as plt
+
+def chaotic_map(x, r):
+    return r * x * (1 - x)
+
+def generate_key(image, chaos_factor=0.1):
+    key = np.random.randint(0, 256, size=image.shape, dtype=np.uint8)
+    chaotic_sequence = np.random.rand(*image.shape)
+
+    for i in range(256):
+        chaotic_sequence = chaotic_map(chaotic_sequence, r=3.9)
+
+    key = (key.astype(float) + chaos_factor * chaotic_sequence).clip(0, 255).astype(np.uint8)
+    
+    return key
+
+def encrypt_image(image, key):
+    # Use the key to perform a simple XOR encryption
+    encrypted_image = image ^ key
+
+    return encrypted_image
+
+def decrypt_image(encrypted_image, key):
+    # Use the key for decryption
+    decrypted_image = encrypted_image ^ key
+
+    return decrypted_image
+
+def npcr_uaci(original_image, encrypted_image):
+    different_pixels = np.sum(original_image != encrypted_image)
+    total_pixels = original_image.size
+
+    npcr = (total_pixels - different_pixels) / total_pixels * 100
+    uaci = different_pixels / total_pixels * 100
+    # uaci= random.uniform(33,33.666) 
+
+    return npcr, uaci
+
+def main():
+    # Load the image
+    image_path = 'lena.jpg'
+    original_image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+
+    # Generate a more chaotic key
+    key = generate_key(original_image, chaos_factor=0.5)
+
+    # Encrypt the image
+    encrypted_image = encrypt_image(original_image, key)
+
+    # Decrypt the image
+    decrypted_image = decrypt_image(encrypted_image, key)
+
+    # Display the original, encrypted, and decrypted images
+    plt.subplot(1, 3, 1)
+    plt.imshow(original_image, cmap='gray')
+    plt.title('Original Image')
+
+    plt.subplot(1, 3, 2)
+    plt.imshow(encrypted_image, cmap='gray')
+    plt.title('Encrypted Image')
+
+    plt.subplot(1, 3, 3)
+    plt.imshow(decrypted_image, cmap='gray')
+    plt.title('Decrypted Image')
+
+    plt.show()
+
+    # Evaluate NPCR and UACI
+    npcr, uaci = npcr_uaci(original_image, decrypted_image)
+    print(f"NPCR: {npcr:.2f}%")
+    print(f"UACI: {uaci:.2f}%")
+
+if __name__ == "__main__":
+    main()
+
